@@ -8,17 +8,21 @@ public class Heap {
 	
 	public Heap()
 	{
-		heapStates = new State[1000000];
+		heapStates = new State[2000000];
 	}
 	
-	public void insert(State state)
+	public void insert(State state,Solver solver)
 	{
-		if(hashtable.containsKey(state.getState()))
+		if(hashtable.containsKey(solver.getHash(state.getState()))) 
+		{
 			return;
-				
-		addToHashTable(state.getState());
+		}
+		
+		addToHashTable(solver.getHash(state.getState()));
+		
 		heapStates[size] = state;
 		size++;
+		solver.incrementCount();
 		
 		int iterator = size-1;
 		
@@ -108,7 +112,5 @@ public class Heap {
 			return false;
 		}
 	}
-	
-	public int heapSize() {	return size; }
 
 }

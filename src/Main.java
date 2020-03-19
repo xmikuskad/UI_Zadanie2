@@ -4,31 +4,44 @@ public class Main {
 
 	public static void main(String[] args) {
 		
-		int width, height;
-		String finalState,currentState;
-		Solver solver = new Solver();
+		int width, height, mPos=-1;
+		int[][] finalState,currentState;
+		Solver solver;
 		
 		Scanner scanner = new Scanner(System.in);
 		
-		System.out.println("Height: ");
+		System.out.println("Vyska: ");
 		height = scanner.nextInt();
-		System.out.println("Width: ");
+		System.out.println("Sirka: ");
 		width = scanner.nextInt();		
 		
-		System.out.println("Final state: ");
-		finalState = scanner.next();
-		System.out.println("Current state: ");
-		currentState = scanner.next();	
-		scanner.close();
+		finalState = new int[height][width];
+		currentState = new int[height][width];		
 		
+		System.out.println("Konecny stav: ");
+		for(int i=0;i<height;i++)
+		{
+			for(int j=0;j<width;j++)
+			{
+				finalState[i][j]= scanner.nextInt();
+			}
+		}
 			
-		System.out.println("H: "+height+" W: "+width);
-		System.out.println("finalState: "+finalState);
-		System.out.println("Current state "+currentState);
+		System.out.println("Aktualny stav: ");		
+		for(int i=0;i<height;i++)
+		{
+			for(int j=0;j<width;j++)
+			{
+				currentState[i][j]= scanner.nextInt(); 
+				if(currentState[i][j]==-1 )
+					mPos = j+i*width;
+			}
+		}
+		scanner.close();
 
-		
-		String endString = solver.solvePuzzle(finalState,currentState,height,width);
-		System.out.println("RESULT: "+endString);
+		solver = new Solver(height,width);
+		String endString = solver.solvePuzzle(finalState,currentState,mPos);
+		System.out.println(endString);
 		
 	}
 	
