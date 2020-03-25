@@ -1,21 +1,28 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Arrays.*;
 
 public class Solver {
+	
+	int MAX_ATTEMPTS = 600000;
+	int SPACE_CHARACTER = 0;
+	int PRINT_COUNT_LIMIT = 1000;
+	boolean PRINT_PROGRESS = false;
+	
+	boolean firstHeuristic = true;
 	Heap heap = new Heap();
-	long count=0;
-	int MAX_ATTEMPTS = 1000000;
+	long generatedCount=0;
+	long processedCount=0;
 	int height,width;
 	
-	public Solver(int heightInc,int widthInc)
+	public Solver(int heightInc,int widthInc,boolean firstHeuristicInc)
 	{
 		height = heightInc;
 		width = widthInc;
+		firstHeuristic = firstHeuristicInc;
 	}
 	
-	public String solvePuzzle(int[][] finalState,int[][] currentStateInc, int mPosInc)
+	public List<Integer> solvePuzzle(int[][] finalState,int[][] currentStateInc, int mPosInc)
 	{		
 		int[][] currentState = currentStateInc;
 		heap.addToHashTable(getHash(currentState));
@@ -23,73 +30,73 @@ public class Solver {
 		List<Integer> list = new ArrayList<>();
 		int mPos = mPosInc;
 		
-		while(!checkEqual(finalState, currentState))
+		//Pokial nie sme vo finalnom stave
+		while(!Arrays.deepEquals(finalState, currentState))			
 		{
-			//Overit!
-			int xPos = mPos%width;
+			//x a y pozicia medzery
+			int xPos = mPos%width;	
 			int yPos = mPos/width;
 			
 			if(yPos > 0)
 			{
-				//Hore
-				//System.out.println("1");
-				//System.out.println(xPos + " | "+yPos);
+				//Vytvorenie stavu prechodom hore
 				moveTile(1, getArrayCopy(currentState),finalState,list,xPos,yPos);
 			}
 			if(yPos < height -1)
 			{
-				//Dole
-				//System.out.println("2");
-				//System.out.println(xPos + " | "+yPos);
+				//Vytvorenie stavu prechodom dole
 				moveTile(2, getArrayCopy(currentState),finalState,list,xPos,yPos);
 			}
 			if(xPos > 0)
 			{
-				//Dolava
-				//System.out.println("3");
-				//System.out.println(xPos + " | "+yPos);
+				//Vytvorenie stavu prechodom dolava
 				moveTile(3, getArrayCopy(currentState),finalState,list,xPos,yPos);
 			}
 			if(xPos < width-1)
 			{
-				//Doprava
-				//System.out.println("4");
-				//System.out.println(xPos + " | "+yPos);
+				//Vytvorenie stavu prechodom doprava
 				moveTile(4, getArrayCopy(currentState),finalState,list,xPos,yPos);
 			}
 			
+			//Vybratie najvyhodnejsieho prvku z haldy
 			State state = heap.getMin();
+			processedCount++;
+			
+			//Kontrola, ci nahodou halda nie je prazdna
 			if(state == null)
 			{
-				System.out.println("heap is empty "+count);
-				return "RESULT NOT FOUND!";
+				System.out.println("Prazdny heap!");
+				System.out.println("Pocet spracovanych stavov "+processedCount);
+				System.out.println("Pocet vygenerovanych stavov "+generatedCount);
+				return null;
 			}
+			
 			//Zastavenie ak hladanie trva prilis dlho
-			if(count > MAX_ATTEMPTS)
+			if(generatedCount > MAX_ATTEMPTS)
 			{
-				return "max attempts reached ... stopping";
+				System.out.println("maximum pokusov dosiahnutych ... stopping");
+				System.out.println("Pocet spracovanych stavov "+processedCount);
+				System.out.println("Pocet vygenerovanych stavov "+generatedCount);
+				return null;
 			}
+			
+			//Nastavenie noveho stavu, pozicie a doterajsieho smeru
 			currentState = state.getState();
 			list = state.getDirection();
 			mPos = state.getMPos();
 		}
 		
-		System.out.println("Number of steps: "+list.size());
-		System.out.println("generated states "+count);
-		printResults(list);
+		System.out.println("Pocet krokov: "+list.size());
+		System.out.println("Pocet spracovanych stavov "+processedCount);
+		System.out.println("Pocet vygenerovanych stavov "+generatedCount);
 		
-		return "RESULT FOUND";
+		return list;
 		
 		
 	}
 	
-	private void printResults(List<Integer> list)
-	{
-		for(int i : list)
-			System.out.println(getDirectionName(i));
-
-	}
-	
+	//Tato funkcia vytvori string z daneho stavu.
+	//Pouzivam ju pre vytvorenie stringu do hash mapy aby som zabranil opakovaniu stavov.
 	public String getHash(int[][] state)
 	{
 		String hashString = "";
@@ -107,6 +114,7 @@ public class Solver {
 		return hashString;
 	}
 	
+	//Vytvori kopiu pola... Nenasiel som ziadnu java funkciu, ktora by to robila pre 2 rozmerne pole
 	private int[][] getArrayCopy(int[][] arrayInc)
 	{
 		int[][] newArray = new int[height][width];
@@ -118,50 +126,37 @@ public class Solver {
 		return newArray;
 	}
 	
-	private String getDirectionName(int num)
-	{
-		switch (num) {
-		case 1: return "hore";
-		case 2: return "dole";
-		case 3: return "vlavo";
-		case 4: return "vpravo";
-		default:
-			break;
-		}
-		return "NOT FOUND";
-	}
-	
+	//Posunutie sa v danom smere
 	public void moveTile(int direction, int[][] currentState,int[][] finalState, List<Integer> list, int xPos, int yPos)
 	{
 		List<Integer> newList = new ArrayList<>();
 		newList.addAll(list);
 		
-		//System.out.println("-----4-----");
-		//printArray(currentState);
-		
 		int tmp, mPos;
+		
+		
 		switch (direction) {
-		case 1:
+		case 1:	//Posunutie hore
 			tmp = currentState[yPos-1][xPos];
-			currentState[yPos-1][xPos] = -1;
+			currentState[yPos-1][xPos] = SPACE_CHARACTER;
 			currentState[yPos][xPos] = tmp;
 			mPos = (yPos-1)*width + xPos;
 			break;
-		case 2:
+		case 2:	//Posunutie dole
 			tmp = currentState[yPos+1][xPos];
-			currentState[yPos+1][xPos] = -1;
+			currentState[yPos+1][xPos] = SPACE_CHARACTER;
 			currentState[yPos][xPos] = tmp;
 			mPos = (yPos+1)*width + xPos;
 			break;
-		case 3:
+		case 3:	//Posunutie dolava
 			tmp = currentState[yPos][xPos-1];
-			currentState[yPos][xPos-1] = -1;
+			currentState[yPos][xPos-1] = SPACE_CHARACTER;
 			currentState[yPos][xPos] = tmp;	
 			mPos = yPos*width + xPos-1;
 			break;
-		case 4:
+		case 4:	//Posunutie doprava
 			tmp = currentState[yPos][xPos+1];
-			currentState[yPos][xPos+1] = -1;
+			currentState[yPos][xPos+1] = SPACE_CHARACTER;
 			currentState[yPos][xPos] = tmp;
 			mPos = yPos*width + xPos +1;
 			break;
@@ -173,21 +168,28 @@ public class Solver {
 			break;
 		}
 		
-		//System.out.println("-----5-----");
-		//printArray(currentState);
-
-		
 		newList.add(direction);
 		
-		//Tu sa upravuje heuristika
-		int priority = heuristic1(finalState, currentState);
+		//Vybratie heuristickej funkcie a pridanie noveho stavu do haldy
+		int priority;
+		if(firstHeuristic)
+			priority = heuristic1(finalState, currentState);
+		else
+			priority = heuristic2(finalState, currentState);
+		
 		heap.insert(new State(priority, currentState, newList, mPos),this);
 		
 	}
 	
-	public void incrementCount() {count++;}
+	//Zvacsuje pocet vytvorenych stavov.
+	public void incrementCount() 
+	{
+		generatedCount++;
+		if(PRINT_PROGRESS && generatedCount%PRINT_COUNT_LIMIT == 0)
+			System.out.println(generatedCount+" vygenerovanych stavov");
+	}
 	
-	
+	//Funkcia prvej heuristiky
 	private int heuristic1(int[][] finalState, int[][] currentState)
 	{
 		int count =0;
@@ -204,34 +206,32 @@ public class Solver {
 		return count;
 	}
 	
-	private boolean checkEqual(int[][] finalState, int[][] currentState)
+	//Funkcia druhej heuristiky
+	private int heuristic2(int[][] finalState, int[][] currentState)
 	{
-		//System.out.println("-----1-----");
-		//printArray(finalState);
-		//System.out.println("-----2-----");
-		//printArray(currentState);
-		//System.out.println("-----3-----");
+		int[] histogram = new int[height*width];
+		int count =0;
+		
 		for(int i=0;i<height;i++)
 		{
 			for(int j=0;j<width;j++)
 			{
-				if(currentState[i][j] != finalState[i][j])
-					return false;
+				histogram[currentState[i][j]]=j+i*width;
 			}
 		}
-		return true;
+		
+		for(int i=0;i<height;i++)
+		{
+			for(int j=0;j<width;j++)
+			{
+				int num = finalState[i][j];
+				int pos = histogram[num];
+				count+= Math.abs(pos/width-i) + Math.abs(pos%width -j);			
+			}
+		}
+		
+		return count;
 	}
 	
-	//Debug
-	private void printArray(int [][]arrayEh)
-	{
-		for(int i=0;i<height;i++)
-		{
-			for(int j=0;j<width;j++)
-			{
-				System.out.print(arrayEh[i][j]);
-			}
-			System.out.println("");
-		}
-	}
+	
 }
